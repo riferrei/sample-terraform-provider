@@ -75,7 +75,7 @@ This provider was created using the SDKv2, which allows developers to debug the 
 1. Start a delve debugging session:
 
 ```bash
-dlv exec --accept-multiclient --continue --headless ./terraform-provider-example -- -debug
+dlv exec --accept-multiclient --continue --headless ./terraform-provider-sample -- -debug
 ```
 
 This will output the reattach configuration to the output.
