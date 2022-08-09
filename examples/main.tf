@@ -1,6 +1,5 @@
 variable "crudCrudToken" {
   type = string
-  default = "<TOKEN_FROM_CRUDCRUD_WEBSITE>"
 }
 
 provider "sample" {
@@ -8,7 +7,7 @@ provider "sample" {
 }
 
 resource "sample_marvel_character" "daredevil" {
-  fullname = "DareDevil"
+  fullname = "Daredevil"
   identity = "Matt Murdock"
   knownas = "The man without fear"
   type = "super-hero"
