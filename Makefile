@@ -9,7 +9,7 @@ OS_ARCH=darwin_arm64
 default: install
 
 build:
-	go build -o ${BINARY}
+	go build -gcflags="all=-N -l" -o ${BINARY}
 
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_arm64

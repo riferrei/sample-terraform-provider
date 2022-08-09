@@ -1,6 +1,6 @@
 variable "token" {
   type = string
-  default = "<TOKEN_FROM_CRUDCRUD_WEBSITE>"
+  default = "be2f93e3dd124c06af92fb8e13345722"
 }
 
 provider "sample" {
