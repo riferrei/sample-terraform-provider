@@ -32,11 +32,11 @@ provider "sample" {
   token = <TOKEN_FROM_CRUDCRUD_WEBSITE>
 }
 
-resource "sample_character" "daredevil" {
-  fullname = "DareDevil"
-  realname = "Matt Murdock"
-  knownas = "The man without fear"
-  type = "super-hero"
+resource "sample_character" "deadpool" {
+  fullname = "Deadpool"
+  identity = "Wade Wilson"
+  knownas = "Merc with a Mouth"
+  type = "anti-hero"
 }
 ```
 
