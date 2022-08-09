@@ -25,7 +25,10 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"sample_character": sampleCharacter(),
+			"sample_character": resourceCharacter(),
+		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"sample_character": datasourceCharacter(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

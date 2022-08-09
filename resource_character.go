@@ -14,31 +14,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var (
-	types = []string{"hero", "super-hero", "anti-hero", "villain"}
-)
-
-func sampleCharacter() *schema.Resource {
+func resourceCharacter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: characterCreate,
 		ReadContext:   characterRead,
 		UpdateContext: characterUpdate,
 		DeleteContext: characterDelete,
 		Schema: map[string]*schema.Schema{
-			"fullname": {
+			fullNameField: {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"identity": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: false,
-			},
-			"knownas": {
+			identityField: {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"type": {
+			knownasField: {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			typeField: {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: func(v interface{}, k string) (wrs []string, ers []error) {
@@ -65,22 +60,14 @@ func sampleCharacter() *schema.Resource {
 	}
 }
 
-type CharacterData struct {
-	ID       string `json:"_id,omitempty"`
-	FullName string `json:"fullname,omitempty"`
-	Identity string `json:"identity,omitempty"`
-	KnownAs  string `json:"knownas,omitempty"`
-	Type     string `json:"type,omitempty"`
-}
-
 func characterCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	endpoint := meta.(string)
 	character := &CharacterData{
-		FullName: data.Get("fullname").(string),
-		Identity: data.Get("identity").(string),
-		KnownAs:  data.Get("knownas").(string),
-		Type:     data.Get("type").(string),
+		FullName: data.Get(fullNameField).(string),
+		Identity: data.Get(identityField).(string),
+		KnownAs:  data.Get(knownasField).(string),
+		Type:     data.Get(typeField).(string),
 	}
 
 	jsonBody, _ := json.Marshal(character)
@@ -124,10 +111,10 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 
 	character := &CharacterData{}
 	json.Unmarshal(bodyBytes, character)
-	data.Set("fullname", character.FullName)
-	data.Set("identity", character.Identity)
-	data.Set("knownas", character.KnownAs)
-	data.Set("type", character.Type)
+	data.Set(fullNameField, character.FullName)
+	data.Set(identityField, character.Identity)
+	data.Set(knownasField, character.KnownAs)
+	data.Set(typeField, character.Type)
 
 	return diags
 
@@ -137,10 +124,10 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 
 	endpoint := meta.(string) + "/" + data.Id()
 	character := &CharacterData{
-		FullName: data.Get("fullname").(string),
-		Identity: data.Get("identity").(string),
-		KnownAs:  data.Get("knownas").(string),
-		Type:     data.Get("type").(string),
+		FullName: data.Get(fullNameField).(string),
+		Identity: data.Get(identityField).(string),
+		KnownAs:  data.Get(knownasField).(string),
+		Type:     data.Get(typeField).(string),
 	}
 	jsonBody, _ := json.Marshal(character)
 	bodyReader := bytes.NewReader(jsonBody)
@@ -164,10 +151,10 @@ func characterDelete(ctx context.Context, data *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 	endpoint := meta.(string) + "/" + data.Id()
 	character := &CharacterData{
-		FullName: data.Get("fullname").(string),
-		Identity: data.Get("identity").(string),
-		KnownAs:  data.Get("knownas").(string),
-		Type:     data.Get("type").(string),
+		FullName: data.Get(fullNameField).(string),
+		Identity: data.Get(identityField).(string),
+		KnownAs:  data.Get(knownasField).(string),
+		Type:     data.Get(typeField).(string),
 	}
 
 	jsonBody, _ := json.Marshal(character)
