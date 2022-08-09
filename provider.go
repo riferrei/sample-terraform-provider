@@ -25,10 +25,10 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"sample_character": resourceCharacter(),
+			"sample_marvel_character": resourceMarvelCharacter(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"sample_character": datasourceCharacter(),
+			"sample_marvel_character": datasourceMarvelCharacter(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

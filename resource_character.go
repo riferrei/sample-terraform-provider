@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceCharacter() *schema.Resource {
+func resourceMarvelCharacter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: characterCreate,
 		ReadContext:   characterRead,
@@ -63,7 +63,7 @@ func resourceCharacter() *schema.Resource {
 func characterCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	endpoint := meta.(string)
-	character := &CharacterData{
+	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),
@@ -87,7 +87,7 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
-	createdCharacter := &CharacterData{}
+	createdCharacter := &MarvelCharacter{}
 	json.Unmarshal(bodyBytes, createdCharacter)
 	data.SetId(createdCharacter.ID)
 
@@ -109,7 +109,7 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 		log.Fatal(err)
 	}
 
-	character := &CharacterData{}
+	character := &MarvelCharacter{}
 	json.Unmarshal(bodyBytes, character)
 	data.Set(fullNameField, character.FullName)
 	data.Set(identityField, character.Identity)
@@ -123,7 +123,7 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	endpoint := meta.(string) + "/" + data.Id()
-	character := &CharacterData{
+	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),
@@ -150,7 +150,7 @@ func characterDelete(ctx context.Context, data *schema.ResourceData, meta interf
 
 	var diags diag.Diagnostics
 	endpoint := meta.(string) + "/" + data.Id()
-	character := &CharacterData{
+	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),

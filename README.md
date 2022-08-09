@@ -25,14 +25,14 @@ Once you have done this, you can start writing your `.tf` files and run the comm
 Using the Provider
 ----------------------
 
-Here is an example that you can use to play with the provider:
+The provider allows you to create, read, update, and delete characters from Marvel. Here is an example that you can use to play with the provider:
 
 ```
 provider "sample" {
   token = <TOKEN_FROM_CRUDCRUD_WEBSITE>
 }
 
-resource "sample_character" "deadpool" {
+resource "sample_marvel_character" "deadpool" {
   fullname = "Deadpool"
   identity = "Wade Wilson"
   knownas = "Merc with a Mouth"

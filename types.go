@@ -11,7 +11,7 @@ var (
 	types = []string{"hero", "super-hero", "anti-hero", "villain"}
 )
 
-type CharacterData struct {
+type MarvelCharacter struct {
 	ID       string `json:"_id,omitempty"`
 	FullName string `json:"fullname,omitempty"`
 	Identity string `json:"identity,omitempty"`

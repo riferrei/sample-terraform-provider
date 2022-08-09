@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func datasourceCharacter() *schema.Resource {
+func datasourceMarvelCharacter() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: datasourceCharacterRead,
 		Schema: map[string]*schema.Schema{
@@ -56,12 +56,12 @@ func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, met
 		log.Fatal(err)
 	}
 
-	var characterList []CharacterData
+	var characterList []MarvelCharacter
 	json.Unmarshal(bodyBytes, &characterList)
 
 	if err == nil && len(characterList) > 0 {
 		idx := slices.IndexFunc(characterList,
-			func(character CharacterData) bool {
+			func(character MarvelCharacter) bool {
 				return strings.EqualFold(identity, character.Identity)
 			},
 		)
