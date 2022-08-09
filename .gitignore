@@ -12,6 +12,9 @@ examples/terraform.tfstate.backup
 *.so
 *.dylib
 
+#vscode
+.vscode
+
 # Test binary, built with `go test -c`
 *.test
 
