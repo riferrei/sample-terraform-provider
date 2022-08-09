@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -56,16 +58,26 @@ func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, met
 
 	var characterList []CharacterData
 	json.Unmarshal(bodyBytes, &characterList)
+
 	if err == nil && len(characterList) > 0 {
-		for _, character := range characterList {
-			if strings.EqualFold(identity, character.Identity) {
-				data.SetId(character.ID)
-				data.Set(fullNameField, character.FullName)
-				data.Set(identityField, character.Identity)
-				data.Set(knownasField, character.KnownAs)
-				data.Set(typeField, character.Type)
-				break
-			}
+		idx := slices.IndexFunc(characterList,
+			func(character CharacterData) bool {
+				return strings.EqualFold(identity, character.Identity)
+			},
+		)
+		if idx >= 0 {
+			character := characterList[idx]
+			data.SetId(character.ID)
+			data.Set(fullNameField, character.FullName)
+			data.Set(identityField, character.Identity)
+			data.Set(knownasField, character.KnownAs)
+			data.Set(typeField, character.Type)
+		} else {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "Datasource was not loaded",
+				Detail:   "Reason: no character with the identity '" + identity + "'.",
+			})
 		}
 	}
 
