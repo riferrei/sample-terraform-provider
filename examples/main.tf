@@ -1,10 +1,10 @@
-variable "token" {
+variable "crudCrudToken" {
   type = string
-  default = "be2f93e3dd124c06af92fb8e13345722"
+  default = "<TOKEN_FROM_CRUDCRUD_WEBSITE>"
 }
 
 provider "sample" {
-  token = var.token
+  token = var.crudCrudToken
 }
 
 resource "sample_marvel_character" "daredevil" {
