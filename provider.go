@@ -47,7 +47,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	var diags diag.Diagnostics
-	if response.StatusCode == 400 {
+	if response.StatusCode != http.StatusOK {
 		detail, err := io.ReadAll(response.Body)
 		if err != nil {
 			log.Fatal(err)
