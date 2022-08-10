@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -41,8 +40,8 @@ func resourceMarvelCharacter() *schema.Resource {
 					var warns []string
 					value, _ := v.(string)
 					validType := false
-					for _, typeValue := range types {
-						if value == typeValue {
+					for _, characterType := range characterTypes {
+						if value == characterType {
 							validType = true
 							break
 						}
@@ -50,7 +49,7 @@ func resourceMarvelCharacter() *schema.Resource {
 					if !validType {
 						errors = append(errors, fmt.Errorf("Invalid value for "+
 							"type. Valid values are: "+
-							strings.Join(types, ", ")))
+							strings.Join(characterTypes, ", ")))
 						return warns, errors
 					}
 					return warns, errors
@@ -63,7 +62,7 @@ func resourceMarvelCharacter() *schema.Resource {
 func characterCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	endpoint := meta.(string)
+	session := meta.(*Session)
 	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
@@ -73,19 +72,34 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 
 	jsonBody, _ := json.Marshal(character)
 	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodPost, endpoint, bodyReader)
+	request, err := http.NewRequest(http.MethodPost, session.Endpoint, bodyReader)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to create HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
-
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	response, err := http.DefaultClient.Do(request)
+	response, err := session.HttpClient.Do(request)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to execute HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
+	defer response.Body.Close()
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to read response",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
 
 	createdCharacter := &MarvelCharacter{}
@@ -103,15 +117,35 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 func characterRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	endpoint := meta.(string) + "/" + data.Id()
-	response, err := http.Get(endpoint)
-	if err != nil {
-		log.Fatal(err)
-	}
+	session := meta.(*Session)
 
+	request, err := http.NewRequest(http.MethodGet, session.Endpoint+"/"+data.Id(), nil)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to create HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
+	}
+	response, err := session.HttpClient.Do(request)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to execute HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
+	}
+	defer response.Body.Close()
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to read response",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
 
 	character := &MarvelCharacter{}
@@ -127,34 +161,45 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 
 func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
-	endpoint := meta.(string) + "/" + data.Id()
+	var diags diag.Diagnostics
+	session := meta.(*Session)
 	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),
 		Type:     data.Get(typeField).(string),
 	}
+
 	jsonBody, _ := json.Marshal(character)
 	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodPut, endpoint, bodyReader)
+	request, err := http.NewRequest(http.MethodPut, session.Endpoint+"/"+data.Id(), bodyReader)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to create HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
-
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	_, err = http.DefaultClient.Do(request)
+	_, err = session.HttpClient.Do(request)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to execute HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
 
-	return characterRead(ctx, data, meta)
+	return diags
 
 }
 
 func characterDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	endpoint := meta.(string) + "/" + data.Id()
+	session := meta.(*Session)
 	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
@@ -164,15 +209,23 @@ func characterDelete(ctx context.Context, data *schema.ResourceData, meta interf
 
 	jsonBody, _ := json.Marshal(character)
 	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodDelete, endpoint, bodyReader)
+	request, err := http.NewRequest(http.MethodDelete, session.Endpoint+"/"+data.Id(), bodyReader)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to create HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
-
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	_, err = http.DefaultClient.Do(request)
+	_, err = session.HttpClient.Do(request)
 	if err != nil {
-		return diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to execute HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
 
 	data.SetId("")

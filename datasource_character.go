@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -44,16 +43,36 @@ func datasourceMarvelCharacter() *schema.Resource {
 func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	endpoint := meta.(string)
+	session := meta.(*Session)
 	identity := data.Get(identityField).(string)
-	response, err := http.Get(endpoint)
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	request, err := http.NewRequest(http.MethodGet, session.Endpoint, nil)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to create HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
+	}
+	response, err := session.HttpClient.Do(request)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to execute HTTP request",
+			Detail:   err.Error(),
+		})
+		return diags
+	}
+	defer response.Body.Close()
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to read response",
+			Detail:   err.Error(),
+		})
+		return diags
 	}
 
 	var characterList []MarvelCharacter

@@ -1,15 +1,15 @@
 package main
 
-const (
-	fullNameField = "fullname"
-	identityField = "identity"
-	knownasField  = "knownas"
-	typeField     = "type"
-)
+import "net/http"
 
-var (
-	types = []string{"hero", "super-hero", "anti-hero", "villain"}
-)
+type SessionKey struct {
+	Key int
+}
+
+type Session struct {
+	Endpoint   string
+	HttpClient *http.Client
+}
 
 type MarvelCharacter struct {
 	ID       string `json:"_id,omitempty"`
@@ -18,3 +18,17 @@ type MarvelCharacter struct {
 	KnownAs  string `json:"knownas,omitempty"`
 	Type     string `json:"type,omitempty"`
 }
+
+const (
+	tokenField    = "token"
+	timeoutField  = "timeout"
+	fullNameField = "fullname"
+	identityField = "identity"
+	knownasField  = "knownas"
+	typeField     = "type"
+)
+
+var (
+	sessionKey     = SessionKey{Key: 1}
+	characterTypes = []string{"hero", "super-hero", "anti-hero", "villain"}
+)
