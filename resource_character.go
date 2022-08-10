@@ -62,6 +62,7 @@ func resourceMarvelCharacter() *schema.Resource {
 
 func characterCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
+	var diags diag.Diagnostics
 	endpoint := meta.(string)
 	character := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
@@ -90,8 +91,12 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 	createdCharacter := &MarvelCharacter{}
 	json.Unmarshal(bodyBytes, createdCharacter)
 	data.SetId(createdCharacter.ID)
+	data.Set(fullNameField, createdCharacter.FullName)
+	data.Set(identityField, createdCharacter.Identity)
+	data.Set(knownasField, createdCharacter.KnownAs)
+	data.Set(typeField, createdCharacter.Type)
 
-	return characterRead(ctx, data, meta)
+	return diags
 
 }
 
