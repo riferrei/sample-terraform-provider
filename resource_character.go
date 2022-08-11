@@ -156,7 +156,7 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 	backendClient := meta.(*opensearch.Client)
 	documentID := data.Id()
 
-	document := struct {
+	updateBody := &struct {
 		Doc MarvelCharacter `json:"doc,omitempty"`
 	}{
 		Doc: MarvelCharacter{
@@ -166,7 +166,7 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 			Type:     data.Get(typeField).(string),
 		},
 	}
-	bodyContent, _ := json.Marshal(document)
+	bodyContent, _ := json.Marshal(updateBody)
 	bodyReader := bytes.NewReader(bodyContent)
 
 	// Creating the HTTP request manually until the issue below is fixed.

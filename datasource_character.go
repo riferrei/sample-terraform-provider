@@ -45,19 +45,20 @@ func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, met
 	backendClient := meta.(*opensearch.Client)
 	identity := data.Get(identityField).(string)
 
-	var bodyReader bytes.Buffer
-	search := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"identity": identity,
-			},
-		},
-	}
-	json.NewEncoder(&bodyReader).Encode(search)
+	searchBody := &struct {
+		Query struct {
+			Match struct {
+				Identity string `json:"identity,omitempty"`
+			} `json:"match,omitempty"`
+		} `json:"query,omitempty"`
+	}{}
+	searchBody.Query.Match.Identity = identity
+	bodyContent, _ := json.Marshal(searchBody)
+	bodyReader := bytes.NewReader(bodyContent)
 
 	searchRequest := opensearchapi.SearchRequest{
 		Index: []string{backendIndex},
-		Body:  &bodyReader,
+		Body:  bodyReader,
 	}
 	searchResponse, err := searchRequest.Do(ctx, backendClient)
 	if err != nil {
@@ -69,7 +70,7 @@ func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, met
 		return diags
 	}
 	defer searchResponse.Body.Close()
-	bodyContent, err := io.ReadAll(searchResponse.Body)
+	bodyContent, err = io.ReadAll(searchResponse.Body)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
