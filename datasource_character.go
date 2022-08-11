@@ -1,16 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
-	"net/http"
-	"strings"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/opensearch-project/opensearch-go"
+	"github.com/opensearch-project/opensearch-go/opensearchapi"
 )
 
 func datasourceMarvelCharacter() *schema.Resource {
@@ -43,61 +42,59 @@ func datasourceMarvelCharacter() *schema.Resource {
 func datasourceCharacterRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	session := meta.(*Session)
+	backendClient := meta.(*opensearch.Client)
 	identity := data.Get(identityField).(string)
 
-	request, err := http.NewRequest(http.MethodGet, session.Endpoint, nil)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to create HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
-	}
-	response, err := session.HttpClient.Do(request)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to execute HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to read response",
-			Detail:   err.Error(),
-		})
-		return diags
-	}
-
-	var characterList []MarvelCharacter
-	json.Unmarshal(bodyBytes, &characterList)
-
-	if err == nil && len(characterList) > 0 {
-		idx := slices.IndexFunc(characterList,
-			func(character MarvelCharacter) bool {
-				return strings.EqualFold(identity, character.Identity)
+	var bodyReader bytes.Buffer
+	search := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match": map[string]interface{}{
+				"identity": identity,
 			},
-		)
-		if idx >= 0 {
-			character := characterList[idx]
-			data.SetId(character.ID)
-			data.Set(fullNameField, character.FullName)
-			data.Set(identityField, character.Identity)
-			data.Set(knownasField, character.KnownAs)
-			data.Set(typeField, character.Type)
-		} else {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "Datasource was not loaded",
-				Detail:   "Reason: no character with the identity '" + identity + "'.",
-			})
-		}
+		},
+	}
+	json.NewEncoder(&bodyReader).Encode(search)
+
+	searchRequest := opensearchapi.SearchRequest{
+		Index: []string{backendIndex},
+		Body:  &bodyReader,
+	}
+	searchResponse, err := searchRequest.Do(ctx, backendClient)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure to retrieve character",
+			Detail:   "Reason: " + err.Error(),
+		})
+		return diags
+	}
+	defer searchResponse.Body.Close()
+	bodyContent, err := io.ReadAll(searchResponse.Body)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure reading response",
+			Detail:   "Reason: " + err.Error(),
+		})
+		return diags
+	}
+
+	backendSearchResponse := &BackendSearchResponse{}
+	json.Unmarshal(bodyContent, backendSearchResponse)
+
+	if backendSearchResponse.Hits.Total.Value > 0 {
+		data.SetId(backendSearchResponse.Hits.Hits[0].ID)
+		character := backendSearchResponse.Hits.Hits[0].Source
+		data.Set(fullNameField, character.FullName)
+		data.Set(identityField, character.Identity)
+		data.Set(knownasField, character.KnownAs)
+		data.Set(typeField, character.Type)
+	} else {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Datasource was not loaded",
+			Detail:   "Reason: no character with the identity '" + identity + "'.",
+		})
 	}
 
 	return diags

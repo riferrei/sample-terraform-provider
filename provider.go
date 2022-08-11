@@ -2,30 +2,23 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-)
-
-const (
-	backendAPI = "https://crudcrud.com/api/${token}/sample"
+	"github.com/opensearch-project/opensearch-go"
+	"github.com/opensearch-project/opensearch-go/opensearchapi"
 )
 
 func Provider() *schema.Provider {
 
 	provider := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			tokenField: {
+			backendAddressField: {
 				Type:     schema.TypeString,
-				Required: true,
-			},
-			timeoutField: {
-				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  300,
+				Default:  backendAddress,
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -43,17 +36,32 @@ func Provider() *schema.Provider {
 
 func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
-	token := data.Get(tokenField).(string)
-	timeout := data.Get(timeoutField).(int)
-	endpoint := strings.ReplaceAll(backendAPI, "${token}", token)
-
-	session := &Session{
-		Endpoint: endpoint,
-		HttpClient: &http.Client{
-			Timeout: time.Duration(timeout) * time.Second,
+	backendAddress := data.Get(backendAddressField).(string)
+	backendClient, _ := opensearch.NewClient(
+		opensearch.Config{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+			Addresses: []string{backendAddress},
 		},
+	)
+
+	pingRequest := opensearchapi.PingRequest{
+		Pretty:     true,
+		Human:      true,
+		ErrorTrace: true,
+	}
+	_, err := pingRequest.Do(ctx, backendClient)
+	if err != nil {
+		var diags diag.Diagnostics
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure connecting with the backend",
+			Detail:   "Reason: " + err.Error(),
+		})
+		return nil, diags
 	}
 
-	return session, nil
+	return backendClient, nil
 
 }

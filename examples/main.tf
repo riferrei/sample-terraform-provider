@@ -1,9 +1,4 @@
-variable "crudCrudToken" {
-  type = string
-}
-
 provider "sample" {
-  token = var.crudCrudToken
 }
 
 resource "sample_marvel_character" "daredevil" {

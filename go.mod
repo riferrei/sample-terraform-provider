@@ -2,7 +2,10 @@ module sample-terraform-provider
 
 go 1.19
 
-require github.com/hashicorp/terraform-plugin-sdk/v2 v2.20.0
+require (
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.20.0
+	github.com/opensearch-project/opensearch-go v1.1.0
+)
 
 require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
@@ -39,8 +42,7 @@ require (
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/zclconf/go-cty v1.10.0 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.6 // indirect

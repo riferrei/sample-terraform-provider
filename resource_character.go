@@ -11,6 +11,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/opensearch-project/opensearch-go"
+	"github.com/opensearch-project/opensearch-go/opensearchapi"
 )
 
 func resourceMarvelCharacter() *schema.Resource {
@@ -62,53 +64,45 @@ func resourceMarvelCharacter() *schema.Resource {
 func characterCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	session := meta.(*Session)
-	character := &MarvelCharacter{
+	backendClient := meta.(*opensearch.Client)
+
+	marvelCharacter := &MarvelCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),
 		Type:     data.Get(typeField).(string),
 	}
+	bodyContent, _ := json.Marshal(marvelCharacter)
+	bodyReader := bytes.NewReader(bodyContent)
 
-	jsonBody, _ := json.Marshal(character)
-	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodPost, session.Endpoint, bodyReader)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to create HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
+	indexRequest := opensearchapi.IndexRequest{
+		Index: backendIndex,
+		Body:  bodyReader,
 	}
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	response, err := session.HttpClient.Do(request)
+	indexResponse, err := indexRequest.Do(ctx, backendClient)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failure to execute HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to read response",
-			Detail:   err.Error(),
+			Summary:  "Failure to create character",
+			Detail:   "Reason: " + err.Error(),
 		})
 		return diags
 	}
 
-	createdCharacter := &MarvelCharacter{}
-	json.Unmarshal(bodyBytes, createdCharacter)
-	data.SetId(createdCharacter.ID)
-	data.Set(fullNameField, createdCharacter.FullName)
-	data.Set(identityField, createdCharacter.Identity)
-	data.Set(knownasField, createdCharacter.KnownAs)
-	data.Set(typeField, createdCharacter.Type)
+	defer indexResponse.Body.Close()
+	bodyContent, err = io.ReadAll(indexResponse.Body)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure reading response",
+			Detail:   "Reason: " + err.Error(),
+		})
+		return diags
+	}
+
+	backendResponse := &BackendResponse{}
+	json.Unmarshal(bodyContent, backendResponse)
+	data.SetId(backendResponse.ID)
 
 	return diags
 
@@ -117,43 +111,40 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 func characterRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	session := meta.(*Session)
+	backendClient := meta.(*opensearch.Client)
+	documentID := data.Id()
 
-	request, err := http.NewRequest(http.MethodGet, session.Endpoint+"/"+data.Id(), nil)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to create HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
+	getRequest := opensearchapi.GetRequest{
+		Index:      backendIndex,
+		DocumentID: documentID,
 	}
-	response, err := session.HttpClient.Do(request)
+	getResponse, err := getRequest.Do(ctx, backendClient)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failure to execute HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to read response",
-			Detail:   err.Error(),
+			Summary:  "Failure to retrieve character",
+			Detail:   "Reason: " + err.Error(),
 		})
 		return diags
 	}
 
-	character := &MarvelCharacter{}
-	json.Unmarshal(bodyBytes, character)
-	data.Set(fullNameField, character.FullName)
-	data.Set(identityField, character.Identity)
-	data.Set(knownasField, character.KnownAs)
-	data.Set(typeField, character.Type)
+	defer getResponse.Body.Close()
+	bodyContent, err := io.ReadAll(getResponse.Body)
+	if err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failure reading response",
+			Detail:   "Reason: " + err.Error(),
+		})
+		return diags
+	}
+
+	backendResponse := &BackendResponse{}
+	json.Unmarshal(bodyContent, backendResponse)
+	data.Set(fullNameField, backendResponse.Source.FullName)
+	data.Set(identityField, backendResponse.Source.Identity)
+	data.Set(knownasField, backendResponse.Source.KnownAs)
+	data.Set(typeField, backendResponse.Source.Type)
 
 	return diags
 
@@ -162,17 +153,27 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	session := meta.(*Session)
-	character := &MarvelCharacter{
-		FullName: data.Get(fullNameField).(string),
-		Identity: data.Get(identityField).(string),
-		KnownAs:  data.Get(knownasField).(string),
-		Type:     data.Get(typeField).(string),
-	}
+	//backendClient := meta.(*opensearch.Client)
+	documentID := data.Id()
 
-	jsonBody, _ := json.Marshal(character)
-	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodPut, session.Endpoint+"/"+data.Id(), bodyReader)
+	document := struct {
+		Doc MarvelCharacter `json:"doc,omitempty"`
+	}{
+		Doc: MarvelCharacter{
+			FullName: data.Get(fullNameField).(string),
+			Identity: data.Get(identityField).(string),
+			KnownAs:  data.Get(knownasField).(string),
+			Type:     data.Get(typeField).(string),
+		},
+	}
+	bodyContent, _ := json.Marshal(document)
+	bodyReader := bytes.NewReader(bodyContent)
+
+	// This part of the code is a temporary fix until the following
+	// bug is fixed: https://github.com/opensearch-project/opensearch-go/issues/145
+	// Then, the commented out code below should be used instead.
+	endpoint := backendAddress + "/sample/_update/" + documentID
+	request, err := http.NewRequest(http.MethodPost, endpoint, bodyReader)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -182,15 +183,32 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 		return diags
 	}
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	_, err = session.HttpClient.Do(request)
+	_, err = http.DefaultClient.Do(request)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failure to execute HTTP request",
-			Detail:   err.Error(),
+			Summary:  "Failure to update character",
+			Detail:   "Reason: " + err.Error(),
 		})
 		return diags
 	}
+
+	/*
+		updateRequest := opensearchapi.UpdateRequest{
+			Index:      backendIndex,
+			DocumentID: documentID,
+			Body:       bodyReader,
+		}
+		_, err := updateRequest.Do(ctx, backendClient)
+		if err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Failure to update character",
+				Detail:   "Reason: " + err.Error(),
+			})
+			return diags
+		}
+	*/
 
 	return diags
 
@@ -199,31 +217,19 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 func characterDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	session := meta.(*Session)
-	character := &MarvelCharacter{
-		FullName: data.Get(fullNameField).(string),
-		Identity: data.Get(identityField).(string),
-		KnownAs:  data.Get(knownasField).(string),
-		Type:     data.Get(typeField).(string),
-	}
+	backendClient := meta.(*opensearch.Client)
+	documentID := data.Id()
 
-	jsonBody, _ := json.Marshal(character)
-	bodyReader := bytes.NewReader(jsonBody)
-	request, err := http.NewRequest(http.MethodDelete, session.Endpoint+"/"+data.Id(), bodyReader)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to create HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
+	deleteRequest := opensearchapi.DeleteRequest{
+		Index:      backendIndex,
+		DocumentID: documentID,
 	}
-	_, err = session.HttpClient.Do(request)
+	_, err := deleteRequest.Do(ctx, backendClient)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failure to execute HTTP request",
-			Detail:   err.Error(),
+			Summary:  "Failure to delete character",
+			Detail:   "Reason: " + err.Error(),
 		})
 		return diags
 	}
