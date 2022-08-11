@@ -10,6 +10,7 @@ Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) 0.12+
 - [Go](https://golang.org/doc/install) 1.19 (to build the provider plugin)
+- [Docker](https://www.docker.com) 4.11+ (to execute the backend)
 
 Building the Provider
 ---------------------
@@ -29,7 +30,6 @@ The provider allows you to create, read, update, and delete characters from [Mar
 
 ```tcl
 provider "sample" {
-  token = <TOKEN_FROM_CRUDCRUD_WEBSITE>
 }
 
 resource "sample_marvel_character" "deadpool" {

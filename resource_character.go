@@ -153,7 +153,7 @@ func characterRead(ctx context.Context, data *schema.ResourceData, meta interfac
 func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-	//backendClient := meta.(*opensearch.Client)
+	backendClient := meta.(*opensearch.Client)
 	documentID := data.Id()
 
 	document := struct {
@@ -169,11 +169,11 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 	bodyContent, _ := json.Marshal(document)
 	bodyReader := bytes.NewReader(bodyContent)
 
-	// This part of the code is a temporary fix until the following
-	// bug is fixed: https://github.com/opensearch-project/opensearch-go/issues/145
-	// Then, the commented out code below should be used instead.
-	endpoint := backendAddress + "/sample/_update/" + documentID
-	request, err := http.NewRequest(http.MethodPost, endpoint, bodyReader)
+	// Creating the HTTP request manually until the issue below is fixed.
+	// https://github.com/opensearch-project/opensearch-go/issues/145
+	// After this, the code should use the commented out portion below.
+	httpURL := "/" + backendIndex + "/_update/" + documentID
+	request, err := http.NewRequest(http.MethodPost, httpURL, bodyReader)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -183,7 +183,7 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 		return diags
 	}
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	_, err = http.DefaultClient.Do(request)
+	_, err = backendClient.Perform(request)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
