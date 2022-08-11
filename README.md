@@ -3,7 +3,7 @@ Sample Terraform Provider
 
 This repository contains a sample code implementation for a Terraform provider. It is meant to be used as a way to teach, educate, and show the internals of a provider. Even if you are not looking to learn how to build custom providers, you may benefit from learning how one works behind the scenes. For more information about how to build custom providers, please visit the [HashiCorp Learn platform section about this](https://learn.hashicorp.com/tutorials/terraform/provider-use?in=terraform/providers).
 
-**Important**: to play with this provider, you are going to need a CRUD REST API which is used as the upstream backend service this provider communicates with. For simplicity, this projects leverages the REST APIs from the service [CrudCrud](https://crudcrud.com). It gives you a free API available for 24 hours, where you can send up to 100 requests.
+**Important**: this provider uses OpenSearch as the upstream backend service. Before playing with the provider, you first need to get OpenSearch up-and-running. For simplicity, you can use the [docker-compose.yml](./docker-compose.yml) available in this repository.
 
 Requirements
 ------------
