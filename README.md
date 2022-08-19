@@ -17,7 +17,7 @@ Building the Provider
 
 To play with this provider, first you have to build it. Then you must install the native executable generated into your local plugins folder as explained [here](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin). The easiest way to do wall of this is running the following command:
 
-```console
+```bash
 make install
 ```
 
