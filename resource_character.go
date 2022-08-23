@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/opensearch-project/opensearch-go"
-	"github.com/opensearch-project/opensearch-go/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )
 
 func resourceMarvelCharacter() *schema.Resource {
@@ -169,21 +168,12 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 	bodyContent, _ := json.Marshal(updateBody)
 	bodyReader := bytes.NewReader(bodyContent)
 
-	// Creating the HTTP request manually until the issue below is fixed.
-	// https://github.com/opensearch-project/opensearch-go/issues/145
-	// After this, the code should use the commented out portion below.
-	httpURL := "/" + backendIndex + "/_update/" + documentID
-	request, err := http.NewRequest(http.MethodPost, httpURL, bodyReader)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure to create HTTP request",
-			Detail:   err.Error(),
-		})
-		return diags
+	updateRequest := opensearchapi.UpdateRequest{
+		Index:      backendIndex,
+		DocumentID: documentID,
+		Body:       bodyReader,
 	}
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	_, err = backendClient.Perform(request)
+	_, err := updateRequest.Do(ctx, backendClient)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -192,23 +182,6 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 		})
 		return diags
 	}
-
-	/*
-		updateRequest := opensearchapi.UpdateRequest{
-			Index:      backendIndex,
-			DocumentID: documentID,
-			Body:       bodyReader,
-		}
-		_, err := updateRequest.Do(ctx, backendClient)
-		if err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Failure to update character",
-				Detail:   "Reason: " + err.Error(),
-			})
-			return diags
-		}
-	*/
 
 	return diags
 
