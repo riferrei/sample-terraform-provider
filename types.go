@@ -1,6 +1,6 @@
 package main
 
-type MarvelCharacter struct {
+type ComicCharacter struct {
 	ID       string `json:"_id,omitempty"`
 	FullName string `json:"fullname,omitempty"`
 	Identity string `json:"identity,omitempty"`
@@ -9,10 +9,10 @@ type MarvelCharacter struct {
 }
 
 type BackendResponse struct {
-	Index   string           `json:"_index"`
-	ID      string           `json:"_id"`
-	Version int              `json:"_version"`
-	Source  *MarvelCharacter `json:"_source"`
+	Index   string          `json:"_index"`
+	ID      string          `json:"_id"`
+	Version int             `json:"_version"`
+	Source  *ComicCharacter `json:"_source"`
 }
 
 type BackendSearchResponse struct {
@@ -21,22 +21,8 @@ type BackendSearchResponse struct {
 			Value int64 `json:"value"`
 		} `json:"total"`
 		Hits []*struct {
-			ID     string           `json:"_id"`
-			Source *MarvelCharacter `json:"_source"`
+			ID     string          `json:"_id"`
+			Source *ComicCharacter `json:"_source"`
 		} `json:"hits"`
 	} `json:"hits"`
 }
-
-const (
-	backendAddressField = "backend_address"
-	backendAddress      = "http://localhost:9200"
-	backendIndex        = "sample"
-	fullNameField       = "fullname"
-	identityField       = "identity"
-	knownasField        = "knownas"
-	typeField           = "type"
-)
-
-var (
-	characterTypes = []string{"hero", "super-hero", "anti-hero", "villain"}
-)

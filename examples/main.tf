@@ -1,7 +1,7 @@
-provider "sample" {
+provider "buildonaws" {
 }
 
-resource "sample_marvel_character" "daredevil" {
+resource "buildonaws_character" "daredevil" {
   fullname = "Daredevil"
   identity = "Matt Murdock"
   knownas = "The man without fear"
@@ -9,5 +9,5 @@ resource "sample_marvel_character" "daredevil" {
 }
 
 output "daredevil_secret_identity" {
-  value = "The secret identity of ${sample_marvel_character.daredevil.fullname} is '${sample_marvel_character.daredevil.identity}'"
+  value = "The secret identity of ${buildonaws_character.daredevil.fullname} is '${buildonaws_character.daredevil.identity}'"
 }

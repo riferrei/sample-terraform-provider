@@ -22,10 +22,10 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"sample_marvel_character": resourceMarvelCharacter(),
+			"buildonaws_character": resourceCharacter(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"sample_marvel_character": datasourceMarvelCharacter(),
+			"buildonaws_character": datasourceCharacter(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

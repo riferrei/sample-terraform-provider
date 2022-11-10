@@ -1,4 +1,4 @@
-module sample-terraform-provider
+module terraform-provider-buildonaws
 
 go 1.19
 

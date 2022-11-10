@@ -1,8 +1,8 @@
 terraform {
   required_version = ">= 1.3.4"
   required_providers {
-    sample = {
-      source  = "riferrei.com/terraform/sample"
+    buildonaws = {
+      source  = "aws.amazon.com/terraform/buildonaws"
       version = "1.0"
     }
   }

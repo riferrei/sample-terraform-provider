@@ -15,7 +15,7 @@ func main() {
 
 	plugin.Serve(&plugin.ServeOpts{
 		Debug:        debug,
-		ProviderAddr: "riferrei.com/terraform/sample",
+		ProviderAddr: "aws.amazon.com/terraform/buildonaws",
 		ProviderFunc: func() *schema.Provider {
 			return Provider()
 		},

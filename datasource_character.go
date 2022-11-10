@@ -12,7 +12,7 @@ import (
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )
 
-func datasourceMarvelCharacter() *schema.Resource {
+func datasourceCharacter() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: datasourceCharacterRead,
 		Schema: map[string]*schema.Schema{

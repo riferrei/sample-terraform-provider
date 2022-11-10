@@ -14,7 +14,7 @@ import (
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )
 
-func resourceMarvelCharacter() *schema.Resource {
+func resourceCharacter() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: characterCreate,
 		ReadContext:   characterRead,
@@ -65,13 +65,13 @@ func characterCreate(ctx context.Context, data *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 	backendClient := meta.(*opensearch.Client)
 
-	marvelCharacter := &MarvelCharacter{
+	comicCharacter := &ComicCharacter{
 		FullName: data.Get(fullNameField).(string),
 		Identity: data.Get(identityField).(string),
 		KnownAs:  data.Get(knownasField).(string),
 		Type:     data.Get(typeField).(string),
 	}
-	bodyContent, _ := json.Marshal(marvelCharacter)
+	bodyContent, _ := json.Marshal(comicCharacter)
 	bodyReader := bytes.NewReader(bodyContent)
 
 	indexRequest := opensearchapi.IndexRequest{
@@ -156,9 +156,9 @@ func characterUpdate(ctx context.Context, data *schema.ResourceData, meta interf
 	documentID := data.Id()
 
 	updateBody := &struct {
-		Doc MarvelCharacter `json:"doc,omitempty"`
+		Doc ComicCharacter `json:"doc,omitempty"`
 	}{
-		Doc: MarvelCharacter{
+		Doc: ComicCharacter{
 			FullName: data.Get(fullNameField).(string),
 			Identity: data.Get(identityField).(string),
 			KnownAs:  data.Get(knownasField).(string),
