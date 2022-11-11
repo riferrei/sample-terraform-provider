@@ -1,13 +1,18 @@
 package main
 
 const (
-	backendAddressField = "backend_address"
-	backendAddress      = "http://localhost:9200"
-	backendIndex        = "buildonaws"
-	fullNameField       = "fullname"
-	identityField       = "identity"
-	knownasField        = "knownas"
-	typeField           = "type"
+	providerName          = "buildonaws"
+	dataSourceName        = "_character"
+	resourceName          = dataSourceName
+	backendAddressField   = "backend_address"
+	backendAddressDefault = "http://localhost:9200"
+	backendIndex          = "buildonaws"
+	idField               = "id"
+	fullNameField         = "fullname"
+	identityField         = "identity"
+	knownasField          = "knownas"
+	typeField             = "type"
+	lastUpdatedField      = "last_updated"
 )
 
 var (

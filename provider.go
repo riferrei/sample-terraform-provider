@@ -4,45 +4,81 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"net/url"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )
 
-func Provider() *schema.Provider {
+var (
+	_ provider.Provider = &buildOnAWSProvider{}
+)
 
-	provider := &schema.Provider{
-		Schema: map[string]*schema.Schema{
-			backendAddressField: {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  backendAddress,
-			},
-		},
-		ResourcesMap: map[string]*schema.Resource{
-			"buildonaws_character": resourceCharacter(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"buildonaws_character": datasourceCharacter(),
-		},
-		ConfigureContextFunc: providerConfigure,
-	}
-
-	return provider
-
+type buildOnAWSProvider struct {
 }
 
-func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func NewBuildOnAWSProvider() provider.Provider {
+	return &buildOnAWSProvider{}
+}
 
-	backendAddress := data.Get(backendAddressField).(string)
+func (p *buildOnAWSProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = providerName
+}
+
+func (p *buildOnAWSProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
+			backendAddressField: {
+				Type:     types.StringType,
+				Optional: true,
+			},
+		},
+	}, nil
+}
+
+func (p *buildOnAWSProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+
+	tflog.Info(ctx, "Configuring the BuildOnAWS provider")
+
+	var config BuildOnAWSProviderModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+
+	backendAddressValue := backendAddressDefault
+
+	if !config.BackendAddress.IsNull() {
+
+		currentValue := config.BackendAddress.ValueString()
+		tflog.Debug(ctx, "Backend URL set: "+currentValue)
+		url, err := url.ParseRequestURI(currentValue)
+
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root(backendAddressField),
+				"Invalid URL for the backend",
+				"The provider cannot connect with the backend using the URL: '"+currentValue+"'.",
+			)
+			return
+		} else {
+			backendAddressValue = url.RequestURI()
+		}
+
+	}
+
 	backendClient, _ := opensearch.NewClient(
 		opensearch.Config{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
-			Addresses: []string{backendAddress},
+			Addresses: []string{backendAddressValue},
 		},
 	)
 
@@ -51,17 +87,33 @@ func providerConfigure(ctx context.Context, data *schema.ResourceData) (interfac
 		Human:      true,
 		ErrorTrace: true,
 	}
-	_, err := pingRequest.Do(ctx, backendClient)
+	r, err := pingRequest.Do(ctx, backendClient)
+
 	if err != nil {
-		var diags diag.Diagnostics
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failure connecting with the backend",
-			Detail:   "Reason: " + err.Error(),
-		})
-		return nil, diags
+		resp.Diagnostics.AddError(
+			"Failure connecting with the backend",
+			"Reason: "+err.Error(),
+		)
+	} else {
+		ctx = tflog.SetField(ctx, "ping_request_status", r.StatusCode)
+		ctx = tflog.SetField(ctx, "ping_request_header", r.Header)
+		ctx = tflog.SetField(ctx, "ping_request_body", r.Body)
+		tflog.Debug(ctx, "Response from the ping request")
 	}
 
-	return backendClient, nil
+	resp.DataSourceData = backendClient
+	resp.ResourceData = backendClient
 
+}
+
+func (p *buildOnAWSProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewCharacterDataSource,
+	}
+}
+
+func (p *buildOnAWSProvider) Resources(_ context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewCharacterResource,
+	}
 }

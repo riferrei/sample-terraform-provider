@@ -1,5 +1,27 @@
 package main
 
+import "github.com/hashicorp/terraform-plugin-framework/types"
+
+type BuildOnAWSProviderModel struct {
+	BackendAddress types.String `tfsdk:"backend_address"`
+}
+
+type CharacterDataSourceModel struct {
+	FullName types.String `tfsdk:"fullname"`
+	Identity types.String `tfsdk:"identity"`
+	KnownAs  types.String `tfsdk:"knownas"`
+	Type     types.String `tfsdk:"type"`
+}
+
+type CharacterResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	FullName    types.String `tfsdk:"fullname"`
+	Identity    types.String `tfsdk:"identity"`
+	KnownAs     types.String `tfsdk:"knownas"`
+	Type        types.String `tfsdk:"type"`
+	LastUpdated types.String `tfsdk:"last_updated"`
+}
+
 type ComicCharacter struct {
 	ID       string `json:"_id,omitempty"`
 	FullName string `json:"fullname,omitempty"`

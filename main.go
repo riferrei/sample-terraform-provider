@@ -1,24 +1,21 @@
 package main
 
 import (
+	"context"
 	"flag"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 func main() {
 
 	var debug bool
-	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
+	flag.BoolVar(&debug, "debug", false, "set this to true if you want to debug the code using delve")
 	flag.Parse()
 
-	plugin.Serve(&plugin.ServeOpts{
-		Debug:        debug,
-		ProviderAddr: "aws.amazon.com/terraform/buildonaws",
-		ProviderFunc: func() *schema.Provider {
-			return Provider()
-		},
+	providerserver.Serve(context.Background(), NewBuildOnAWSProvider, providerserver.ServeOpts{
+		Debug:   debug,
+		Address: "aws.amazon.com/terraform/buildonaws",
 	})
 
 }
