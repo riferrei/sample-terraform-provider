@@ -32,10 +32,8 @@ type ComicCharacter struct {
 }
 
 type BackendResponse struct {
-	Index   string          `json:"_index"`
-	ID      string          `json:"_id"`
-	Version int             `json:"_version"`
-	Source  *ComicCharacter `json:"_source"`
+	ID     string          `json:"_id"`
+	Source *ComicCharacter `json:"_source"`
 }
 
 type BackendSearchResponse struct {
