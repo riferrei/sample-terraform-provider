@@ -58,17 +58,17 @@ func (p *buildOnAWSProvider) Configure(ctx context.Context, req provider.Configu
 
 		currentValue := config.BackendAddress.ValueString()
 		tflog.Debug(ctx, "Backend URL set: "+currentValue)
-		url, err := url.ParseRequestURI(currentValue)
+		_, err := url.ParseRequestURI(currentValue)
 
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root(backendAddressField),
 				"Invalid URL for the backend",
-				"The provider cannot connect with the backend using the URL: '"+currentValue+"'.",
+				"Cannot connect with the backend using the URL: '"+currentValue+"'.",
 			)
 			return
 		} else {
-			backendAddressValue = url.RequestURI()
+			backendAddressValue = currentValue
 		}
 
 	}
