@@ -35,6 +35,10 @@ func (c *characterDataSource) Metadata(_ context.Context, req datasource.Metadat
 func (c *characterDataSource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
+			idField: {
+				Type:     types.StringType,
+				Computed: true,
+			},
 			fullNameField: {
 				Type:     types.StringType,
 				Optional: true,
@@ -124,12 +128,13 @@ func (c *characterDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	if backendSearchResponse.Hits.Total.Value > 0 {
 		character := backendSearchResponse.Hits.Hits[0].Source
+		characterPlan.ID = types.StringValue(character.ID)
 		characterPlan.FullName = types.StringValue(character.FullName)
 		characterPlan.Identity = types.StringValue(character.Identity)
 		characterPlan.KnownAs = types.StringValue(character.KnownAs)
 		characterPlan.Type = types.StringValue(character.Type)
 	} else {
-		resp.Diagnostics.AddError(
+		resp.Diagnostics.AddWarning(
 			"Datasource was not loaded",
 			"Reason: no character with the identity '"+characterPlan.Identity.ValueString()+"'.",
 		)

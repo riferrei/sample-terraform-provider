@@ -7,6 +7,7 @@ type BuildOnAWSProviderModel struct {
 }
 
 type CharacterDataSourceModel struct {
+	ID       types.String `tfsdk:"id"`
 	FullName types.String `tfsdk:"fullname"`
 	Identity types.String `tfsdk:"identity"`
 	KnownAs  types.String `tfsdk:"knownas"`
