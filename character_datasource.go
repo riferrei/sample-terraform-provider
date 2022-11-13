@@ -134,6 +134,11 @@ func (c *characterDataSource) Read(ctx context.Context, req datasource.ReadReque
 		characterPlan.KnownAs = types.StringValue(character.KnownAs)
 		characterPlan.Type = types.StringValue(character.Type)
 	} else {
+		var emptyString string
+		characterPlan.ID = types.StringValue(emptyString)
+		characterPlan.FullName = types.StringValue(emptyString)
+		characterPlan.KnownAs = types.StringValue(emptyString)
+		characterPlan.Type = types.StringValue(emptyString)
 		resp.Diagnostics.AddWarning(
 			"Datasource was not loaded",
 			"Reason: no character with the identity '"+characterPlan.Identity.ValueString()+"'.",
